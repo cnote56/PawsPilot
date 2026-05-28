@@ -22,7 +22,7 @@ The app features **EVE**, an objective, helpful, and exceptionally calm training
 
 ## 🐺 Behind EVE's Personality
 
-EVE is programmed as an eve-keeled, objective, and highly professional assistant. She avoids artificial bubbles, bubbly exclamation marks, or over-enthusiasm, providing high-reliability, distraction-free confirmations so you can focus entirely on your pet's behavioral progress.
+EVE is programmed as an objective, and highly professional assistant. She avoids artificial bubbles, bubbly exclamation marks, or over-enthusiasm, providing high-reliability, distraction-free confirmations so you can focus entirely on your pet's behavioral progress.
 
 ---
 
