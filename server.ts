@@ -60,14 +60,23 @@ async function startServer() {
     let ai: GoogleGenerativeAI | null = apiKey ? new GoogleGenerativeAI(apiKey) : null;
     let geminiModel: GenerativeModel | null = ai ? ai.getGenerativeModel(modelName) : null;
 
-    app.post("/api/chat", async (req: express.Request, res) => {
-        const { message, history, customLlmConfig, customSkills } = req.body;
+    app.post("/api/chat", verifyToken, async (req: express.Request, res) => {
+        const { message, history, dogId } = req.body;
         if (!message) return res.status(400).json({ error: "Message required" });
 
-        // AI Logic (simplified for brevity)
+        // Fetch context-aware data
+        let context = "";
+        if (dogId) {
+            const trend = await forecastEngine.getTrend(db, parseInt(dogId));
+            if (trend.status === 'Needs Attention') {
+                context = `SYSTEM NOTE: Dog performance has dropped by ${(trend.trend * 100).toFixed(1)}%. Offer encouraging, corrective training advice.`;
+            }
+        }
+
+        // AI Logic
         if (geminiModel) {
             try {
-                const response = await geminiModel.generateContent(message);
+                const response = await geminiModel.generateContent(`${context} \n User: ${message}`);
                 const text = (await response.response).text();
                 res.json({ reply: text });
             } catch (err) {
