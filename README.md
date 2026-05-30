@@ -65,9 +65,11 @@ You can automatically import custom training curriculums, school syllabus guidel
 
 ---
 
-## 📝 Recent Updates and Enhancements (PawsPilot_REDUX)
+## 🚀 Project Roadmap & History
 
-This section outlines the recent changes and new features integrated into the PawsPilot application:
+- [Build 3.0: The CONSENSUS Event](CHANGELOG.md#build-30-the-consensus-event-planned)
+- [Build 2.0: User Autonomy & Competition](CHANGELOG.md#build-20-user-autonomy--competition)
+- [Build 1.0: Foundation](CHANGELOG.md#build-10-foundation)
 
 ### Dynamic Gemini Model Name Configuration
 -   The `server.ts` file now dynamically configures the Gemini model name using the `GEMINI_MODEL_NAME` environment variable, defaulting to `gemini-3.5-flash` if not specified.
