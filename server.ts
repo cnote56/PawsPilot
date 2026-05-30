@@ -9,7 +9,7 @@ import knex from "knex";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
-import { StorageManager } from "../.antigravity/storage_manager";
+import { forecastEngine } from "../.antigravity/forecast_engine";
 
 // Instantiate StorageManager
 const syncPath = "C:/Users/Cole/PawsPilot_Sync";
@@ -122,8 +122,14 @@ async function startServer() {
         }
     });
 
-    app.post("/api/events/:id/verify", verifyToken, (req, res) => consensusController.verifyDog(req, res, db));
-    app.get("/api/events/active", (req, res) => consensusController.getActiveEvent(req, res, db));
+    app.get("/api/forecast/:dogId", verifyToken, async (req, res) => {
+        try {
+            const trend = await forecastEngine.getTrend(db, parseInt(req.params.dogId));
+            res.json(trend);
+        } catch (error) {
+            res.status(500).json({ message: "Forecast error" });
+        }
+    });
 
     if (process.env.NODE_ENV !== "production") {
         const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });

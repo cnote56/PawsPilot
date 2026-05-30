@@ -1,9 +1,9 @@
 # PawsPilot Project Changelog
 
-## Build 4.0: Local Data Portability
-- **Storage Bridge:** Implemented `StorageManager` in `.antigravity/` to manage raw state persistence.
-- **Automated Sync:** Integrated a 30-minute interval sync in `server.ts` that exports application state (`dogs` and `achievements`) to `C:/Users/Cole/PawsPilot_Sync/pawspilot_state.json`.
-- **Portability:** Data is now persisted in a human-readable JSON format locally, allowing for easy future conversions to Markdown, CSV, or PDF.
+## Build 5.0: Predictive Behavioral Intelligence
+- **Data Audit:** Confirmed `achievements` table supports temporal trend analysis via `date_achieved` and `created_at` fields.
+- **Forecasting Utility:** Initialized `forecast_engine` in `.antigravity/` to calculate rolling performance trends (7-day averages).
+- **Predictive API:** In-progress: Developing `/api/forecast/:dogId` to serve behavioral trend alerts (e.g., performance drop detection).
 
 ## Build 3.0: The CONSENSUS Event
 - **Schema Expansion:** Added `events` and `event_registrations` tables to `dev.sqlite3` via migration `20260530_create_consensus_tables.cjs`.
