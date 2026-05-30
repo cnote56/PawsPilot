@@ -8,6 +8,7 @@
 - [ConsensusEvent.md](ConsensusEvent.md) - Logic and weighted scoring for community events.
 - [PredictiveForecasting.md](PredictiveForecasting.md) - Trend analysis and Behavioral Health scoring.
 - [ContextualCoach.md](ContextualCoach.md) - EVE's integration with behavioral trends.
+- [GlobalLeaderboard.md](GlobalLeaderboard.md) - Crowd-verified performance analytics and consensus aggregation.
 
 ## Data & Sync
 - [StorageSync.md](StorageSync.md) - Local persistence, sync protocols, and export formats.

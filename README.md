@@ -67,10 +67,11 @@ You can automatically import custom training curriculums, school syllabus guidel
 
 ## 🚀 Project Roadmap & History
 
+- [Build 7.0: Global Consensus Aggregator](CHANGELOG.md#build-70-global-consensus-aggregator)
 - [Build 6.0: The EVE Contextual Coach](CHANGELOG.md#build-60-the-eve-contextual-coach)
 - [Build 5.0: Predictive Behavioral Intelligence](CHANGELOG.md#build-50-predictive-behavioral-intelligence)
 - [Build 4.0: Local Data Portability](CHANGELOG.md#build-40-local-data-portability)
-- [Build 3.0: The CONSENSUS Event](CHANGELOG.md#build-30-the-consensus-event-planned)
+- [Build 3.0: The CONSENSUS Event](CHANGELOG.md#build-30-the-consensus-event)
 - [Build 2.0: User Autonomy & Competition](CHANGELOG.md#build-20-user-autonomy--competition)
 - [Build 1.0: Foundation](CHANGELOG.md#build-10-foundation)
 
