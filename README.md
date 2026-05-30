@@ -120,6 +120,10 @@ You can automatically import custom training curriculums, school syllabus guidel
 
 ## 🚀 Live Demo & Interaction
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/cnote56/PawsPilot)
+
+You can click the button above to launch an interactive development environment directly in your browser.
+
 ---
 
 ## 🛠️ Local Tech Stack
