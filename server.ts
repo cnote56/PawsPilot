@@ -9,6 +9,7 @@ import knex from "knex";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import { consensusController } from "../.antigravity/consensus_controller";
 
 dotenv.config();
 
@@ -86,14 +87,27 @@ async function startServer() {
     });
 
     app.get("/api/leaderboard", async (req, res) => {
-        const leaderboard = await db('dogs')
-            .select('dogs.name as dog_name', 'users.username as user_name', db.raw('SUM(achievements.score) as total_score'))
-            .join('users', 'dogs.user_id', '=', 'users.id')
-            .join('achievements', 'dogs.id', '=', 'achievements.dog_id')
-            .groupBy('dogs.id')
-            .orderBy('total_score', 'desc');
-        res.json(leaderboard);
+        try {
+            const leaderboard = await db('dogs')
+                .select(
+                    'dogs.name as dog_name',
+                    'users.username as user_name',
+                    db.raw('SUM(achievements.score) as total_achievement_score'),
+                    db.raw('COALESCE(SUM(event_registrations.consensus_score), 0) as total_consensus_score')
+                )
+                .join('users', 'dogs.user_id', '=', 'users.id')
+                .leftJoin('achievements', 'dogs.id', '=', 'achievements.dog_id')
+                .leftJoin('event_registrations', 'dogs.id', '=', 'event_registrations.dog_id')
+                .groupBy('dogs.id', 'dogs.name', 'users.username')
+                .orderByRaw('(total_achievement_score * (1 + (total_consensus_score * 0.1))) DESC');
+            res.json(leaderboard);
+        } catch (error) {
+            console.error("Leaderboard fetch error:", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
     });
+
+    app.post("/api/events/:id/verify", verifyToken, (req, res) => consensusController.verifyDog(req, res, db));
 
     if (process.env.NODE_ENV !== "production") {
         const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
@@ -102,7 +116,7 @@ async function startServer() {
         app.use(express.static('dist'));
     }
 
-    app.listen(PORT, "0.0.0.0", () => console.log(Server running on port ${ PORT }));
+    app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
 }
 
 startServer();

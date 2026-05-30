@@ -1,23 +1,8 @@
-# PawsPilot Project Changelog (Build 1.0 - 3.0)
+# PawsPilot Project Changelog (Build 3.0 Addendum)
 
-## Build 1.0: Foundation
-- Implemented core EVE chatbot personality (objective, calm, professional).
-- Integrated local Gemini API for training session and milestone parsing.
-- Created local persistence layer using SQLite/Knex.
-- Setup standard browser-based speech recognition and TTS.
-
-## Build 2.0: User Autonomy & Competition
-- **Authentication:** Added user registration, login (bcryptjs), and JWT session management.
-- **Dog Profile Management:** CRUD operations for dogs linked to authenticated users.
-- **Achievement Tracking:** Added achievement scoring system per dog.
-- **Social Leaderboard:** Created `/api/leaderboard` API endpoint to aggregate scores.
-- **GitHub Integration:** Established synchronization with repository `cnote56/PawsPilot`.
-
-## Build 3.0: The CONSENSUS Event (Planned)
-- **Community-Driven Ranking:** Transitioning from simple score aggregation to a community-validated consensus system.
-- **Event-Based Architecture:** Schema expansion to include event registration and multi-user verification.
-- **Hybrid Scoring:** Implementation of individual achievement scores weighted by community consensus.
-- **Goal:** Drive user retention by turning individual training logs into collaborative, shared digital exhibitions.
-
----
-*Generated: 2026-05-30*
+## Build 3.0: The CONSENSUS Event
+- **Schema Expansion:** Added `events` and `event_registrations` tables to `dev.sqlite3` via migration `20260530_create_consensus_tables.cjs`.
+- **Consensus Controller:** Initialized modular controller at `.antigravity/consensus_controller.ts` to handle exhibition voting logic.
+- **Verification API:** Registered `POST /api/events/:id/verify` route in `server.ts` protected by `verifyToken` middleware.
+- **Hybrid Leaderboard:** Refactored `/api/leaderboard` query to implement the weighted scoring algorithm: `TotalAchievementScore * (1 + (TotalConsensusScore * 0.1))`.
+- **Automated Testing:** Added `test_consensus.js` in `.antigravity/` to support smoke testing of consensus endpoints.
