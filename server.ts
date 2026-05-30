@@ -10,6 +10,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { forecastEngine } from "../.antigravity/forecast_engine";
+import { consensusExporter } from "../.antigravity/consensus_exporter";
 
 // Instantiate StorageManager
 const syncPath = "C:/Users/Cole/PawsPilot_Sync";
@@ -131,12 +132,12 @@ async function startServer() {
         }
     });
 
-    app.get("/api/forecast/:dogId", verifyToken, async (req, res) => {
+    app.get("/api/consensus/export", verifyToken, async (req, res) => {
         try {
-            const trend = await forecastEngine.getTrend(db, parseInt(req.params.dogId));
-            res.json(trend);
+            const result = await consensusExporter.exportAnonymousData(db, syncPath);
+            res.json({ message: "Data exported successfully", path: result.path });
         } catch (error) {
-            res.status(500).json({ message: "Forecast error" });
+            res.status(500).json({ message: "Export error" });
         }
     });
 
