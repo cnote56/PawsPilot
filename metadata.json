@@ -1,0 +1,6 @@
+{
+  "name": "Dog Training Tracker & Chatbot",
+  "description": "An interactive chatbot and progress monitoring application for dog owners to easily log training, track behavioral milestones, and export reports in PDF, CSV, and markdown.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
