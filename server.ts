@@ -9,7 +9,22 @@ import knex from "knex";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
-import { consensusController } from "../.antigravity/consensus_controller";
+import { StorageManager } from "../.antigravity/storage_manager";
+
+// Instantiate StorageManager
+const syncPath = "C:/Users/Cole/PawsPilot_Sync";
+const storage = new StorageManager(syncPath);
+
+// Periodically sync (e.g., every 30 minutes)
+setInterval(async () => {
+    try {
+        const dogs = await db('dogs').select('*');
+        const achievements = await db('achievements').select('*');
+        storage.exportState({ dogs, achievements }, 'pawspilot_state');
+    } catch (err) {
+        console.error("Sync error:", err);
+    }
+}, 30 * 60 * 1000);
 
 dotenv.config();
 
