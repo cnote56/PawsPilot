@@ -108,6 +108,7 @@ async function startServer() {
     });
 
     app.post("/api/events/:id/verify", verifyToken, (req, res) => consensusController.verifyDog(req, res, db));
+    app.get("/api/events/active", (req, res) => consensusController.getActiveEvent(req, res, db));
 
     if (process.env.NODE_ENV !== "production") {
         const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
