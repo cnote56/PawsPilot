@@ -96,23 +96,29 @@ You can automatically import custom training curriculums, school syllabus guidel
 
 ## 🚀 How to Try It Out
 
-You can open the development or preview link in your browser to experience PawsPilot immediately:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/cnote56/PawsPilot.git
+   cd PawsPilot
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Configure environment:**
+   Create a `.env` file and add your `GEMINI_API_KEY`:
+   ```bash
+   echo "GEMINI_API_KEY=your_key_here" > .env
+   ```
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+   *The server will be accessible at `http://localhost:3001`.*
 
-1.  **Set Up a Dog Profile:**
-    *   Expand or click **Edit Profile** at the top left to customize your dog's name, breed, birth date, and goals.
-    *   Save details to verify immediate reactivity across live state cards.
-2.  **Conduct a Live Chat Logging & Speech Test:**
-    *   Toggle **Voice Readout (TTS)** to `ENABLED` using the speaker control indicators at the top of EVE's chat window.
-    *   Click **🎙️ Mic Dictation** (ensure browser frame permissions for `microphone` are approved if prompted).
-    *   Speak or type: *"We worked on loose leash walking for 10 minutes and it went awesome"* and hit Enter/Send.
-    *   Watch EVE process the spoken text, create an automatic entry in the **Training Activity Reports** with a rating indicator, and speak her confirmation aloud to you.
-3.  **Try one-tap Walk buttons:**
-    *   While walking, tap one of the large blue quick skill buttons like **Recall** or **Heel**.
-    *   An instant 5-minute success audit will register directly on your graphs in real time.
-4.  **Produce Data Outputs:**
-    *   Click **Markdown Report** to copy formatted progress metrics.
-    *   Click **Printable PDF** to examine or print an elegant monochrome summary suitable for dog trainers or clinical practitioners.
-    *   Download your records using **CSV Export**.
+---
+
+## 🚀 Live Demo & Interaction
 
 ---
 
