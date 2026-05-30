@@ -34,11 +34,24 @@ To make EVE highly customizable and privacy-friendly, you can link the chatbot t
 1. Tap the **⚙️ API Plugin** configuration toggle button located at the top-right corner of EVE's chat panel.
 2. Toggle on the **Enable API Integration Plugin Override** switch.
 3. Select your connector model type:
-   * **Google Gemini SDK:** Enter your private key (`AIzaSy...`) and customize of any target model (e.g., `gemini-2.5-pro`, `gemini-2.5-flash`, etc.).
    * **OpenAI-Compatible Chat API:** Perfect for custom endpoints (like **OpenAI, DeepSeek, Groq**) or self-hosted offline models (**Ollama, LM Studio**).
-4. **Use Handy One-Click Shortcuts:** Custom presets are provided in the settings dialogue so you can auto-configure LM Studio (`http://localhost:1234/v1`), Ollama Local (`http://localhost:11434/v1`), or default cloud services in one click!
+   * **Google Gemini SDK:** Enter your private key (`AIzaSy...`) and customize of any target model (e.g., `gemini-2.5-pro`, `gemini-2.5-flash`, etc.).
 
 ---
+
+## 🏆 Competitive Leaderboard & Social Achievements
+
+PawsPilot now features a competitive edge to help drive user retention through social interaction and gamification:
+
+### Achievement Tracking & Social Competition
+*   **Dog Achievement System:** Authenticated owners can add achievements to their dogs (e.g., "Fastest Recall", "Best Corder-Collie Agility") with associated scores.
+*   **Social Leaderboard:** A centralized API endpoint `/api/leaderboard` tracks all dog performance metrics. It aggregates total scores across all registered achievements, providing an overview of the top-performing dogs and their owners.
+
+### CONSENSUS Dog Show Idea
+*   **Concept:** A recurring, community-voted event where users can submit their dogs' achievement profiles. 
+*   **Implementation:** The current achievement framework provides the foundation for this. Future iterations will include a voting mechanism for users to rank their peers' dogs based on specific criteria (e.g., "Cleanest Crate Training", "Most Improved Walker").
+*   **Goal:** To turn individual training efforts into a collaborative, shared community activity.
+4. **Use Handy One-Click Shortcuts:** Custom presets are provided in the settings dialogue so you can auto-configure LM Studio (`http://localhost:1234/v1`), Ollama Local (`http://localhost:11434/v1`), or default cloud services in one click!
 
 ## 📁 Syllabus & Training Manual Document Analyzer (PDF / TXT / DOCX / Sheets)
 
