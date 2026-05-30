@@ -26,6 +26,32 @@ EVE is programmed as an objective, and highly professional assistant. She avoids
 
 ---
 
+## 🔌 Custom LLM API Plugin Connections (Ollama / Local / Private Keys)
+
+To make EVE highly customizable and privacy-friendly, you can link the chatbot to your own external LLM endpoint rather than using the default Google AI Studio server context.
+
+### Setup Steps:
+1. Tap the **⚙️ API Plugin** configuration toggle button located at the top-right corner of EVE's chat panel.
+2. Toggle on the **Enable API Integration Plugin Override** switch.
+3. Select your connector model type:
+   * **Google Gemini SDK:** Enter your private key (`AIzaSy...`) and customize of any target model (e.g., `gemini-2.5-pro`, `gemini-2.5-flash`, etc.).
+   * **OpenAI-Compatible Chat API:** Perfect for custom endpoints (like **OpenAI, DeepSeek, Groq**) or self-hosted offline models (**Ollama, LM Studio**).
+4. **Use Handy One-Click Shortcuts:** Custom presets are provided in the settings dialogue so you can auto-configure LM Studio (`http://localhost:1234/v1`), Ollama Local (`http://localhost:11434/v1`), or default cloud services in one click!
+
+---
+
+## 📁 Syllabus & Training Manual Document Analyzer (PDF / TXT / DOCX / Sheets)
+
+You can automatically import custom training curriculums, school syllabus guidelines, class agendas, or behavior manuals directly into PawsPilot!
+
+### How to Use:
+1. Locate the **Syllabus & Training Manual Analyzer** section at the bottom of the Pet Profile Card.
+2. Select or drag & drop any training schedule / outline file (`.pdf`, `.txt`, `.docx`, `.xlsx`, `.csv`, `.md`).
+3. Alternatively, tap **Paste Text Directly** to paste curriculum instructions copied from your trainer's emails or website.
+4. EVE uses Gemini to parse your guidelines, extract up to 5 prioritized dog behavioral goals, and automatically configure them as core profile milestones on your active dashboard!
+
+---
+
 ## 🚀 How to Try It Out
 
 You can open the development or preview link in your browser to experience PawsPilot immediately:

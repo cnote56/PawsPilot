@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   Dog, Mic, MicOff, Volume2, VolumeX, Plus, Trash2, Edit2, Save, Download, 
   Printer, FileText, CheckCircle2, AlertCircle, RefreshCw, Trophy, Calendar, Check,
-  ChevronRight, ArrowRight, Sparkles, Upload, Loader2, ArrowUpRight
+  ChevronRight, ArrowRight, Sparkles, Upload, Loader2, ArrowUpRight, Settings
 } from "lucide-react";
 import { DogProfile, TrainingLog, Milestone, ChatMessage, LogStatus } from "./types";
 
@@ -129,10 +129,40 @@ export default function App() {
   const [importJsonText, setImportJsonText] = useState("");
   const [importStatus, setImportStatus] = useState<string | null>(null);
 
+  // --- Training Syllabus Analyzer ---
+  const [isAnalyzingSyllabus, setIsAnalyzingSyllabus] = useState(false);
+  const [syllabusFeedback, setSyllabusFeedback] = useState<string | null>(null);
+  const [syllabusDragActive, setSyllabusDragActive] = useState(false);
+  const [showPasteTextSyllabus, setShowPasteTextSyllabus] = useState(false);
+  const [pastedSyllabusText, setPastedSyllabusText] = useState("");
+
+  // --- LLM API Plugin Configurations ---
+  const [showLlmSettingsModal, setShowLlmSettingsModal] = useState(false);
+  const [llmConfig, setLlmConfig] = useState(() => {
+    const saved = localStorage.getItem("llm_config");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return {
+      enabled: false,
+      provider: "gemini", // "gemini" or "openai_compatible"
+      apiKey: "",
+      baseUrl: "https://api.openai.com/v1",
+      model: "gpt-4o-mini"
+    };
+  });
+
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
   // --- Sync storage changes ---
+  useEffect(() => {
+    localStorage.setItem("llm_config", JSON.stringify(llmConfig));
+  }, [llmConfig]);
   useEffect(() => {
     localStorage.setItem("dog_profile", JSON.stringify(profile));
   }, [profile]);
@@ -242,6 +272,134 @@ export default function App() {
     }));
   };
 
+  const handleSyllabusFile = async (file: File) => {
+    setIsAnalyzingSyllabus(true);
+    setSyllabusFeedback(null);
+    try {
+      const textPreviewPromise = new Promise<string>((resolve) => {
+        const textReader = new FileReader();
+        textReader.onload = (e) => {
+          resolve(e.target?.result as string || "");
+        };
+        textReader.readAsText(file.slice(0, 50000));
+      });
+
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string || "";
+          const base64 = result.split(",")[1] || result;
+          resolve(base64);
+        };
+        reader.onerror = () => reject(new Error("File reading error"));
+        reader.readAsDataURL(file);
+      });
+
+      const [base64Data, plainText] = await Promise.all([
+        base64Promise,
+        textPreviewPromise
+      ]);
+
+      const response = await fetch("/api/analyze-syllabus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileBase64: base64Data,
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          textContent: plainText,
+          customLlmConfig: llmConfig
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to parse document format or content.");
+      }
+
+      const data = await response.json();
+      
+      if (data.extractedGoals && Array.isArray(data.extractedGoals)) {
+        setProfile(prev => ({
+          ...prev,
+          goals: Array.from(new Set([...prev.goals, ...data.extractedGoals]))
+        }));
+      }
+
+      setSyllabusFeedback(`Parsed "${file.name}"! Configured goals and extracted focus.`);
+
+      // Push custom chatbot message to the history
+      const systemFeedbackMsg: ChatMessage = {
+        id: "sys-syllabus-" + Date.now(),
+        sender: "assistant",
+        text: `🤖 **[EVE Training Syllabus Analyzer]** I've analyzed your document: "${file.name}".\n\n🎯 **Extracted Plan Summary:**\n${data.summary || "No description provided"}\n\n⛳ **Added Primary Goals to Profile:**\n${data.extractedGoals?.map((g: string) => `• ${g}`).join("\n") || ""}\n\n🐕 **Custom Focus Areas:**\n${data.customSkills?.map((s: string) => `• ${s}`).join("\n") || "Standard obedience training recommended."}`,
+        timestamp: new Date().toISOString()
+      };
+      setChatHistory(prev => [...prev, systemFeedbackMsg]);
+
+      if (isTtsActive && typeof speakText === "function") {
+        speakText(`Document analyzed successfully! I have parsed your training syllabus and imported your new pet goals.`);
+      }
+
+    } catch (err: any) {
+      console.error(err);
+      setSyllabusFeedback(`Error: ${err.message || "Failed to analyze document."}`);
+    } finally {
+      setIsAnalyzingSyllabus(false);
+    }
+  };
+
+  const handleSyllabusTextSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pastedSyllabusText.trim()) return;
+
+    setIsAnalyzingSyllabus(true);
+    setSyllabusFeedback(null);
+
+    try {
+      const response = await fetch("/api/analyze-syllabus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          textContent: pastedSyllabusText,
+          fileName: "Pasted Guidelines.txt",
+          customLlmConfig: llmConfig
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to parse text guidelines.");
+      }
+
+      const data = await response.json();
+      
+      if (data.extractedGoals && Array.isArray(data.extractedGoals)) {
+        setProfile(prev => ({
+          ...prev,
+          goals: Array.from(new Set([...prev.goals, ...data.extractedGoals]))
+        }));
+      }
+
+      setSyllabusFeedback(`Parsed text syllabus successfully! Added ${data.extractedGoals?.length || 0} objectives.`);
+      setPastedSyllabusText("");
+      setShowPasteTextSyllabus(false);
+
+      // Inject system feedback chat message
+      const systemFeedbackMsg: ChatMessage = {
+        id: "sys-syllabus-" + Date.now(),
+        sender: "assistant",
+        text: `🤖 **[EVE Text Guidelines Analyzer]** Direct syllabus text parsed!\n\n🎯 **Extracted Plan Summary:**\n${data.summary || "No description provided"}\n\n⛳ **Added Primary Goals:**\n${data.extractedGoals?.map((g: string) => `• ${g}`).join("\n") || "None detected"}\n\n🐕 **Custom Focus Areas:**\n${data.customSkills?.map((s: string) => `• ${s}`).join("\n") || "No new training protocols detected."}`,
+        timestamp: new Date().toISOString()
+      };
+      setChatHistory(prev => [...prev, systemFeedbackMsg]);
+
+    } catch (err: any) {
+      console.error(err);
+      setSyllabusFeedback(`Error: ${err.message || "Failed to process text."}`);
+    } finally {
+      setIsAnalyzingSyllabus(false);
+    }
+  };
+
   // --- Manual Log Entry Adders ---
   const handleQuickAddLog = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -323,12 +481,14 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: cleanMsg,
-          history: chatHistory.slice(-6) // Send small sliding window of logs to keep token count compact
+          history: chatHistory.slice(-6), // Send small sliding window of logs to keep token count compact
+          customLlmConfig: llmConfig
         })
       });
 
       if (!response.ok) {
-        throw new Error("Local backend or server response error.");
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.details || errJson.error || "Server response issue.");
       }
 
       const result = await response.json();
@@ -373,7 +533,7 @@ export default function App() {
 
     } catch (err: any) {
       console.error(err);
-      const errReply = "An error occurred attempting to reach the server parser. Check Internet connections.";
+      const errReply = `AI Error: ${err.message || "An error occurred attempting to reach the server parser. Check internet connections."}`;
       setChatHistory((prev) => [...prev, {
         id: "ai-err-" + Date.now(),
         sender: "assistant",
@@ -744,6 +904,129 @@ export default function App() {
                   <Plus className="w-3.5 h-3.5" /> Add
                 </button>
               </form>
+            </div>
+
+            {/* AI Syllabus & Training Manual Document Analyzer */}
+            <div className="mt-4 pt-4 border-t border-dashed border-neutral-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1">
+                  <Sparkles className="w-4 h-4 text-purple-600 animate-pulse" />
+                  <span className="text-xs font-semibold text-neutral-800">Syllabus & Training Manual Analyzer</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPasteTextSyllabus(!showPasteTextSyllabus)}
+                  className="text-[10px] text-neutral-500 hover:text-neutral-800 underline font-medium cursor-pointer"
+                >
+                  {showPasteTextSyllabus ? "Choose File Upload" : "Paste Text Directly"}
+                </button>
+              </div>
+
+              <p className="text-[10px] text-neutral-400 mb-3 leading-normal">
+                Upload a structured training guide, PDF flyer, Excel plan, or text syllabus. EVE will analyze objectives and automatically update your profile training goals.
+              </p>
+
+              {syllabusFeedback && (
+                <div className="mb-3 p-2 bg-purple-50/50 border border-purple-100 rounded-lg text-[11px] text-purple-700 flex items-center justify-between gap-1">
+                  <span className="font-medium">{syllabusFeedback}</span>
+                  <button 
+                    onClick={() => setSyllabusFeedback(null)} 
+                    className="text-purple-400 hover:text-purple-600 font-bold px-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              {showPasteTextSyllabus ? (
+                <form onSubmit={handleSyllabusTextSubmit} className="space-y-2">
+                  <textarea
+                    placeholder="Paste dog syllabus training guidelines, class agenda, or key behaviors here (e.g. Week 1: Loose-leash walk, Week 2: High distractions stay)..."
+                    value={pastedSyllabusText}
+                    onChange={(e) => setPastedSyllabusText(e.target.value)}
+                    rows={4}
+                    className="w-full text-xs p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-400 focus:bg-white resize-none"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowPasteTextSyllabus(false)}
+                      className="px-2.5 py-1 text-[10px] text-neutral-500 hover:text-neutral-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isAnalyzingSyllabus || !pastedSyllabusText.trim()}
+                      className="px-3 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-lg text-[10px] font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      {isAnalyzingSyllabus ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Parsing Rules...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3" />
+                          <span>Extract & Apply Goals</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setSyllabusDragActive(true);
+                  }}
+                  onDragLeave={() => setSyllabusDragActive(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setSyllabusDragActive(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      handleSyllabusFile(e.dataTransfer.files[0]);
+                    }
+                  }}
+                  className={`border border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-center transition-all ${
+                    syllabusDragActive 
+                      ? "border-purple-450 bg-purple-50/20" 
+                      : "border-neutral-200 hover:border-purple-300 bg-neutral-50 hover:bg-neutral-50/10"
+                  }`}
+                >
+                  <input
+                    id="syllabus-file-upload"
+                    type="file"
+                    accept=".pdf,.txt,.docx,.xlsx,.xls,.csv,.json,.md"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleSyllabusFile(e.target.files[0]);
+                      }
+                    }}
+                    className="hidden"
+                    disabled={isAnalyzingSyllabus}
+                  />
+
+                  {isAnalyzingSyllabus ? (
+                    <div className="flex flex-col items-center gap-1.5 py-1.5 animate-fadeIn">
+                      <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+                      <p className="text-[11px] font-medium text-neutral-700">Analyzing Syllabus details...</p>
+                      <p className="text-[9px] text-neutral-400">Gemini is analyzing document guidelines & milestones</p>
+                    </div>
+                  ) : (
+                    <label 
+                      htmlFor="syllabus-file-upload"
+                      className="cursor-pointer flex flex-col items-center gap-1.5 w-full py-1"
+                    >
+                      <Upload className="w-5 h-5 text-neutral-400" />
+                      <p className="text-[11px] font-semibold text-neutral-600">
+                        Drop curriculum guide / file, or <span className="text-purple-600 hover:text-purple-700">browse</span>
+                      </p>
+                      <p className="text-[9px] text-neutral-400">Supports PDF, XLSX/CSV, DOCX, TXT, MD up to 10MB</p>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1170,13 +1453,27 @@ export default function App() {
                 </div>
               </div>
 
-              {/* TTS Readout Switch Toggle */}
-              <div className="flex items-center gap-2">
+              {/* Dual configuration: custom LLM settings & Voice TTS Readout Switch Toggle */}
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLlmSettingsModal(true)}
+                  title="Configure Custom LLM Integration Plugin (Ollama, LM Studio, personal Keys, custom models etc.)"
+                  className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] sm:text-xs font-medium cursor-pointer transition-all border ${
+                    llmConfig.enabled 
+                      ? "bg-purple-50 border-purple-200 text-purple-700 font-semibold" 
+                      : "bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200"
+                  }`}
+                >
+                  <Settings className={`w-3.5 h-3.5 ${llmConfig.enabled ? "text-purple-600 animate-spin-slow" : "text-neutral-500"}`} />
+                  <span>API Plugin {llmConfig.enabled ? "ON" : "OFF"}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsTtsActive(!isTtsActive)}
                   title={isTtsActive ? "Mute automatic Speech synthesis readout" : "Read assistant chats out loud automatically during training"}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium cursor-pointer transition-all border ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-medium cursor-pointer transition-all border ${
                     isTtsActive 
                       ? "bg-blue-50 border-blue-200 text-blue-700 font-semibold" 
                       : "bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200"
@@ -1373,6 +1670,207 @@ export default function App() {
                 Close View
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: LLM Plugin Configuration Modal */}
+      {showLlmSettingsModal && (
+        <div className="fixed inset-0 bg-neutral-900/60 flex items-center justify-center p-4 z-50 animate-fadeIn no-print">
+          <div className="bg-white rounded-2xl w-full max-w-xl border border-neutral-200 shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-display font-semibold text-sm text-neutral-900 flex items-center gap-1.5">
+                  <Settings className="w-4 h-4 text-purple-600" /> Custom LLM Connections & Plugins
+                </h3>
+                <p className="text-[10px] text-neutral-400 font-mono">Link EVE to your own external LLM provider endpoint</p>
+              </div>
+              <button 
+                onClick={() => setShowLlmSettingsModal(false)}
+                className="text-neutral-400 hover:text-neutral-600 p-1 font-bold text-lg cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body / Content */}
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-neutral-50/25">
+              
+              {/* Introduction / Info banner */}
+              <div className="p-3.5 bg-neutral-50 border border-neutral-200 rounded-xl space-y-1.5 text-xs text-neutral-600 leading-normal">
+                <p className="font-semibold text-neutral-850">❓ How the API Plugin works:</p>
+                <p>
+                  By enabling this plugin, you can route all of EVE's intelligent audio/text parsers through your personal Gemini API account, custom open-source models, or local servers (like <strong>Ollama, LM Studio</strong>).
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <span className="px-2 py-0.5 bg-neutral-200 text-neutral-700 rounded text-[9px] font-mono">✓ High Privacy</span>
+                  <span className="px-2 py-0.5 bg-neutral-200 text-neutral-700 rounded text-[9px] font-mono">✓ Custom Models</span>
+                  <span className="px-2 py-0.5 bg-neutral-200 text-neutral-700 rounded text-[9px] font-mono">✓ Offline-Capable</span>
+                </div>
+              </div>
+
+              {/* Status Selector */}
+              <div className="flex items-center justify-between p-3 bg-white border border-neutral-200 rounded-xl shadow-2xs">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-semibold text-neutral-800 block cursor-pointer" htmlFor="enable-custom-llm">
+                    Enable API Integration Plugin Override
+                  </label>
+                  <p className="text-[10px] text-neutral-400">Toggles whether requests route custom-side or studio-side</p>
+                </div>
+                <input 
+                  id="enable-custom-llm"
+                  type="checkbox"
+                  checked={llmConfig.enabled}
+                  onChange={(e) => setLlmConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                  className="w-4.5 h-4.5 accent-purple-600 cursor-pointer"
+                />
+              </div>
+
+              {llmConfig.enabled && (
+                <div className="space-y-3.5 animate-fadeIn p-4 border border-purple-100 bg-purple-50/10 rounded-xl">
+                  
+                  {/* Quick-Preset Shortcuts */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono font-bold tracking-wider text-neutral-400 uppercase">⚡ ONE-CLICK PLUG PRESETS</span>
+                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setLlmConfig({
+                          enabled: true,
+                          provider: "openai_compatible",
+                          apiKey: "",
+                          baseUrl: "http://localhost:11434/v1",
+                          model: "llama3"
+                        })}
+                        className="py-1.5 px-2 bg-white border border-neutral-200 hover:border-purple-300 rounded-lg text-[10px] text-neutral-600 flex items-center justify-center gap-1 cursor-pointer font-medium transition-all"
+                      >
+                        🦙 Ollama Local
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLlmConfig({
+                          enabled: true,
+                          provider: "openai_compatible",
+                          apiKey: "",
+                          baseUrl: "http://localhost:1234/v1",
+                          model: "local-model"
+                        })}
+                        className="py-1.5 px-2 bg-white border border-neutral-200 hover:border-purple-300 rounded-lg text-[10px] text-neutral-600 flex items-center justify-center gap-1 cursor-pointer font-medium transition-all"
+                      >
+                        💻 LM Studio Local
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLlmConfig({
+                          enabled: true,
+                          provider: "gemini",
+                          apiKey: "",
+                          baseUrl: "https://api.openai.com/v1",
+                          model: "gemini-3.5-flash"
+                        })}
+                        className="py-1.5 px-2 bg-white border border-neutral-200 hover:border-purple-300 rounded-lg text-[10px] text-neutral-600 flex items-center justify-center gap-1 cursor-pointer font-medium transition-all"
+                      >
+                        ⭐ Personal Gemini Key
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLlmConfig({
+                          enabled: true,
+                          provider: "openai_compatible",
+                          apiKey: "",
+                          baseUrl: "https://api.openai.com/v1",
+                          model: "gpt-4o-mini"
+                        })}
+                        className="py-1.5 px-2 bg-white border border-neutral-200 hover:border-purple-300 rounded-lg text-[10px] text-neutral-600 flex items-center justify-center gap-1 cursor-pointer font-medium transition-all"
+                      >
+                        🧠 ChatCompletions OpenAI
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Provider choices */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold tracking-wider text-neutral-400 uppercase">CONNECTION TYPE</label>
+                    <select
+                      value={llmConfig.provider}
+                      onChange={(e) => setLlmConfig(prev => ({ ...prev, provider: e.target.value as any }))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-neutral-200 rounded-lg focus:outline-none focus:border-purple-400"
+                    >
+                      <option value="gemini">Google Gemini SDK Protocol</option>
+                      <option value="openai_compatible">OpenAI-Compatible Chat API Endpoint (Ollama, LM Studio, etc.)</option>
+                    </select>
+                  </div>
+
+                  {/* API Key endpoint override */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold tracking-wider text-neutral-400 uppercase font-medium">PERSONAL SECRET KEY / AUTH TOKEN</label>
+                    <input
+                      type="password"
+                      placeholder={llmConfig.provider === "gemini" ? "Paste your private Gemini API key (AIzaSy...)" : "Enter API bearer token if required (otherwise leave blank)"}
+                      value={llmConfig.apiKey}
+                      onChange={(e) => setLlmConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-neutral-200 rounded-lg focus:outline-none focus:border-purple-400 font-mono"
+                    />
+                  </div>
+
+                  {/* Base URL (only if OpenAI compatible) */}
+                  {llmConfig.provider === "openai_compatible" && (
+                    <div className="space-y-1 animate-fadeIn">
+                      <label className="text-[10px] font-mono font-bold tracking-wider text-neutral-400 uppercase">CUSTOM API BASE ENDPOINT URL</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. http://localhost:11434/v1 or https://api.openai.com/v1"
+                        value={llmConfig.baseUrl}
+                        onChange={(e) => setLlmConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
+                        className="w-full text-xs px-3 py-2 bg-white border border-neutral-200 rounded-lg focus:outline-none focus:border-purple-400 font-mono"
+                      />
+                    </div>
+                  )}
+
+                  {/* Model specific selection name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold tracking-wider text-neutral-400 uppercase">TARGET MODEL IDENTIFIER</label>
+                    <input
+                      type="text"
+                      placeholder={llmConfig.provider === "gemini" ? "e.g. gemini-3.5-flash" : "e.g. gpt-4o-mini, llama3, or local-model"}
+                      value={llmConfig.model}
+                      onChange={(e) => setLlmConfig(prev => ({ ...prev, model: e.target.value }))}
+                      className="w-full text-xs px-3 py-2 bg-white border border-neutral-200 rounded-lg focus:outline-none focus:border-purple-400 font-mono"
+                    />
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer triggers */}
+            <div className="p-3 border-t border-neutral-100 flex justify-between bg-neutral-50 text-xs">
+              <button
+                onClick={() => setLlmConfig({
+                  enabled: false,
+                  provider: "gemini",
+                  apiKey: "",
+                  baseUrl: "https://api.openai.com/v1",
+                  model: "gpt-4o-mini"
+                })}
+                className="px-3 py-1.5 border border-dashed border-neutral-300 hover:border-red-400 hover:text-red-600 rounded-lg font-mono text-neutral-500 cursor-pointer"
+              >
+                Reset Default System
+              </button>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowLlmSettingsModal(false)}
+                  className="px-4 py-1.5 border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 rounded-lg font-semibold cursor-pointer"
+                >
+                  Save & Apply Settings
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
